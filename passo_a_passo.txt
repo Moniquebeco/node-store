@@ -1,0 +1,232 @@
+- Fonte: https://www.youtube.com/playlist?list=PLHlHvK2lnJndvvycjBqQAbgEDqXxKLoqn
+
+1. INICIANDO 
+- instalando node.js
+- criando a pasta node-srt(store)
+- comando npm init
+- criar arquivo server.js
+    * opcional colocar o 'use strict' no arquivo server.js que serve para que o JS seja mais severo com erros no código
+
+- comando 'npm install http express debug --save' //instala esse três pacotes de uma só vez
+
+- para rodar pode-se usar o comando node .\server.js no terminal do powershell ou debugar diretamnte com a extensão "Code Runner"
+
+2. CRIANDO SERVIDOR WEB
+- importar o http, debug e express no arquivo server.js
+    * const express = require('express'); <- Procura arquivo na node_modules
+    * const express = require('./test/express'); <- Procura arquivo local
+
+- Criar novas conts para rodar a apliacão e a porta:
+    const app = express();
+    const port = 3000;
+
+- Setar a porta:
+    app.set('port',port);
+
+- Criar o servidor:
+    const server = http.createServer(app);
+    const router = express.Router();
+
+- Configurar primeira rota:
+    const route = router.get('/',(req, res, next) => {
+        res.status(200).send({
+            title: "Node Store API",
+            version: "0.0.1" //versão da API
+        });
+    });
+    app.use('/', route);
+
+- Colocar o servidor para ouvir a aplicação:
+    server.listen(port);
+
+- Testando a API:
+- com Insomnia, Postman ou outro fazer a requisição
+    http://localhost:3000/ 
+
+3.1. NORMALIZANDO A PORTA // para a porta não ficar fixada ou chumbada no código   
+- Criar a função:
+    function nomalizePort(val){
+        const port = parseInt(val, 10);
+
+        if(isNaN(port)){
+            return val; //se porta não for um numero retornar 10
+        }
+
+        if(port >= 0){
+            return port;
+        }
+
+        return false;
+    };
+- aplicar a função na const "port":
+    const port = nomalizePort(process.env.PORT || '3000'); 
+
+3.2. GERENCIADO ERROS DO servidor
+- Criar a função:
+    function onError(error) {
+        if (error.syscall !== 'listen') {
+            throw error;
+        }
+
+        const bind = typeof port === 'string' ?
+            `Pipe ${port}` :
+            `Pipe ${port}`;
+
+        switch (error.code) {
+            case 'EACCES': //Error 'Permission denied'
+                console.error(`${bind} requires elevated privileges`);
+                process.exit(1);
+                break;
+            case 'EADDRINUSE': //Error 'Address already in use'
+                console.error(`${bind} is already in use`);
+                process.exit(1);
+                break;
+            default:
+                throw error;
+        }
+    }
+    * MAIS SOBRE OS ERROR CODE3S DO NODE: https://nodejs.org/api/errors.html#common-system-errors
+- Chamando a função no servidor :
+    server.on('error', onError);
+               error = quando acontecer o evento 'error'
+               ser chamada a função onError
+
+3.3. ULTILIZANDO O DEBUG NA APLICAÇÃO
+- Criar a função:
+    function onListening(){
+        const addr = server.address();
+        const bind = typeof addr == 'string'
+            ? `Pipe ${addr}`
+            : `Pipe ${addr.port}`;
+        debug(`Listening on ${bind}`)    
+    }
+- Chamando a função no servidor depois do error :
+    server.on('listening', onListening);
+
+- !!! COM ISSO JÁ SE TEM UMA API RODANDO E COM ROTA !!!
+
+4. SEPARANDO SERVIDOR
+- Criar a pasta 'bin' e dentro um arquivo server.js: //esse será o novo local do servidor
+    * alterar o local da const 'app'// o app ainda não foi movido
+        const app = require('../src/app');
+    * outra const também são removidas(router, route e express)
+    * as funções do app ficam mas as do server saem
+- Apagar o server.js antigo
+
+- Criar pasta 'src' e dentro criar o arquivo app.js:
+- No arquivo app.js colocar as funções do server:
+const express = require('express');
+const app = express();
+const router = express.Router();
+
+const route = router.get('/',(req, res, next) => {
+    res.status(200).send({
+        title: "Node Store API",
+        version: "0.0.1"
+    });
+});
+app.use('/', route);
+
+- Exportar a aplicação no arquivo app.js:   
+    module.exports = app;
+
+- Para rodar o servidor pelo powershell o comando agora será:
+    node .\bin\server.js
+
+5. CONFIGURANDO START DA APLICAÇÃO
+- No arquivo package.json, nos scripts criar:
+    "start": "node./bin/server.js"
+    * Agora para rodar o projeo o comando é : npm start
+
+- Instalando o NODEMON:
+    - Executar o comando: npm install nodemon --save-dev
+
+6. CRUD REST
+- Criar nova rota:
+    const create = router.post('/',(req, res, next) => {
+        res.status(201).send(req.body);
+    });
+
+- Criar o Controller:  //no arquivo app.js
+    app.use('/products', create);
+
+- No insominia criar a requisição post na rota:
+    http://localhost:3000/products
+
+    no body:
+        {
+        "Title":"Teste"
+        }   
+
+    * Não irá retornar nada pois ele não consegue converter o corpo da requisição para json sozinho
+
+- Instalar o Body Parser:
+    'npm install body-parser --save' para converter o corpo da requisição em json
+    
+    - Importar no aquivo app.js
+        const bodyParser = require('body-parser');
+
+- Colocar o body parse como middleware para todas as requests
+    * antes das rotas 
+        app.use(bodyParser.json()); //o conteudo será convertido em json
+        app.use(bodyParser.urlencoded({ extended: false })); //codificar as urls
+
+- Executar a requisição:
+    http://localhost:3000/products
+        * com o mesmo body
+
+    o retorno deve ser:- Criar o Controller:  //no arquivo app.js
+        {
+        "Title":"Teste"
+        }   
+    ou o que foi passado no body do request como solicitado nessa parte do codigo
+        res.status(201).send(req.body); <- send(req.body)
+
+- Criar novo metodo(PUT):
+const put = router.put('/:id',(req, res, next) => {
+    const id = req.params.id;
+    res.status(200).send({
+        id: id,
+        item: req.body
+        });
+    });
+    * req.body vem no corpo da requisição 
+    * o que quiser mapear da url será nesse formato (req.params.id)
+
+- Criar o Controller:  //no arquivo app.js
+    app.use('/products', put);
+
+- No insominia criar a requisição put na rota:
+    http://localhost:3000/products/123
+
+    no body:
+        {
+            "title": "Teste PUT"
+        }
+    retorno:
+    {
+        "id": "123",
+        "item": {
+            "title": "Teste PUT"
+        }
+    }
+
+- Criar novo metodo(DELETE):
+    const del = router.delete('/',(req, res, next) => {
+        res.status(200).send(req.body);
+    });
+
+- Criar o Controller:  //no arquivo app.js
+    app.use('/products', del);
+
+- Executar a requisição: // com o método DELETE
+    http://localhost:3000/products
+        * com o mesmo body
+
+    o retorno deve ser:
+        {
+        "Title":"Teste"
+        }   
+
+6. ROTAS
+ONDE PAREI: //LINK - https://www.youtube.com/watch?v=Bw-ux9fW1y8&list=PLHlHvK2lnJndvvycjBqQAbgEDqXxKLoqn&index=11
