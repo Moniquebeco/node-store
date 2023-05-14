@@ -183,7 +183,7 @@ app.use('/', route);
         res.status(201).send(req.body); <- send(req.body)
 
 - Criar novo metodo(PUT):
-const put = router.put('/:id',(req, res, next) => {
+    const put = router.put('/:id',(req, res, next) => {
     const id = req.params.id;
     res.status(200).send({
         id: id,
@@ -228,5 +228,126 @@ const put = router.put('/:id',(req, res, next) => {
         "Title":"Teste"
         }   
 
-6. ROTAS
-ONDE PAREI: //LINK - https://www.youtube.com/watch?v=Bw-ux9fW1y8&list=PLHlHvK2lnJndvvycjBqQAbgEDqXxKLoqn&index=11
+7. ROTAS //NOTE - beautify later
+- Criar uma pasta routes dentro da pasta SRC e dentro um arquivo com o nome de index-route.js
+- Dentro do arquivo inserir o codigo:
+    'use strict' // força o javascript s ser mais severo com erros
+
+    const express = require('express');
+    const router = express.Router();
+
+    router.get('/',(req, res, next) => {
+        res.status(200).send({
+            title: "Node Store API",
+            version: "0.0.1"
+        });
+    });
+
+    module.exports = router;
+
+- No arquivo app.js 
+    importar as rotas do index-route.js:
+    const indexRoute = require('./routes/index-route');
+
+    atualizar o uso da rota de app.use('/', route)
+    para app.use('/', indexRoute);
+
+- Criar dentro da pasta routes um arquivo com o nome de products-route.js e 
+    copiar o conteudo do arquivo index.js no mesmo diretorio
+    recortar as outras rotas e colar e remover o const na frente deles pois não há mais a necessidade
+
+    o arquivo products.js vai ficar assim:
+        'use strict' // força o javascript s ser mais severo com erros
+        const express = require('express');
+        const router = express.Router();
+
+        router.get('/',(req, res, next) => {
+            res.status(200).send({
+                title: "Node Store API",
+                version: "0.0.1"
+            });
+        });
+
+        router.post('/',(req, res, next) => {
+            res.status(201).send(req.body);
+        });
+
+        router.put('/:id',(req, res, next) => {
+            const id = req.params.id;
+            res.status(200).send({
+                id: id,
+                item: req.body
+            });
+        });
+
+        router.delete('/',(req, res, next) => {
+            res.status(200).send(req.body);
+        });
+
+        module.exports = router;
+
+    O arquivo app.js fica assim:
+        'use strict' // força o javascript s ser mais severo com erros
+
+        const express = require('express');
+        const bodyParser = require('body-parser');
+
+        const app = express();
+        const router = express.Router();
+
+        //Cerrega as rotas
+        const indexRoute = require('./routes/index-route');
+        const productsRoute = require('./routes/products-route');
+
+        app.use(bodyParser.json());
+        app.use(bodyParser.urlencoded({ extended: false }));
+
+        app.use('/', indexRoute);
+        app.use('/products', productsRoute); //não há mais a necessidade de product de especificar o put e o delete
+
+        module.exports = app;
+
+8. CONTROLLERS //NOTE - beautify later
+- Criar uma pasta controllers dentro da pasta SRC
+    dentro criar o arquivo product-controller.js e dentro exportar o metodo post e remover do products-route.js
+        'use strict';
+
+        exports.post = (req, res ,next) => {
+            res.status(201).send(req.body);
+        }
+    
+    exportar o controller no arquivo de rota:
+        const controller = require('../controllers/product-controller');
+        e usar
+        router.post('/',(req, res, next) => controller.post);
+
+    fazer o mesmo com os outros metodos
+    no products-route.js fica: 
+        router.post('/', controller.post);
+        router.put('/:id', controller.put);
+        router.delete('/', controller.delete);
+            * além da importação
+
+    no products-controller.js fica: 
+        'use strict';
+
+        exports.post = (req, res ,next) => {
+            res.status(201).send(req.body)
+        }
+
+        exports.put = (req, res, next) => {
+            const id = req.params.id;
+            res.status(200).send({
+                id: id,
+                item: req.body
+            });
+        }
+
+        exports.delete = (req, res, next) => {
+            res.status(200).send(req.body);
+        }
+
+
+
+
+
